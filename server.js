@@ -11,6 +11,9 @@ const express = require('express');
 const cors = require('cors');
 const superAgent=require('superagent');
 const { response } = require('express');
+const pg=require('pg');
+const DATABASE_URL = process.env.DATABASE_URL;
+const client = new pg.Client(DATABASE_URL);
 
 // Application Setup
 const PORT = process.env.PORT;
@@ -65,6 +68,16 @@ function Park(name,add,fee,des,url){
 
 
 }
+Park.prototype.save = function() {
+  let SQL = `
+    INSERT INTO locations
+      (name,address,fee,description,url) 
+      VALUES($1,$2,$3,$4,$5) 
+      RETURNING id
+  `;
+  let values = Object.values(this);
+  return client.query(SQL,values);
+};
 
 
 function handelLocationRequest(req, response) {
@@ -89,13 +102,23 @@ function handelLocationRequest(req, response) {
   }
 }
 
+
 function Locations(search_query, formatted_query, latitude, longitude){
   this.search_query= search_query;
   this. formatted_query= formatted_query;
   this.latitude= latitude;
   this.longitude = longitude;
 }
-
+Locations.prototype.save = function() {
+  let SQL = `
+    INSERT INTO locations
+      (search_query,formatted_query,latitude,longitude) 
+      VALUES($1,$2,$3,$4) 
+      RETURNING id
+  `;
+  let values = Object.values(this);
+  return client.query(SQL,values);
+};
 let weatherArr=[];
 function handelWeatherRequest(req, response) {
 
@@ -126,6 +149,12 @@ function handelWeatherRequest(req, response) {
     weatherArr.push(this);
 
   }
+  Weather.prototype.save = function(id) {
+    const SQL = `INSERT INTO weathers (forecast, time) VALUES ($1, $2);`;
+    const values = Object.values(this);
+    values.push(id);
+    client.query(SQL, values);
+  };
 
 }
 function notFoundHandler(request, response) {
@@ -133,5 +162,9 @@ function notFoundHandler(request, response) {
 }
 
 
-
-app.listen(PORT, () => console.log(`Listening to Port ${PORT}`));
+client.connect().then(() => {
+  app.listen(PORT, () => {
+    console.log('Connected to database:', client.connectionParameters.database); //show what database we connected to
+    console.log('Server up on', PORT);
+  });
+});
