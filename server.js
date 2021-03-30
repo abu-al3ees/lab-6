@@ -38,7 +38,7 @@ function handelParkRequest(req, response) {
         const fee=element.fee;
         const description=element.description;
         const url=element.url;
-       return new Park(name,address,fee,description,url);
+        return new Park(name,address,fee,description,url);
 
       });
       response.send(parkArr);
@@ -118,67 +118,6 @@ function handelWeatherRequest(req, response) {
     response.status(500).send(error);
   }
 
-  // function handelLocationRequest(req, res) {
-  //   try{
-  //     let city = req.query.city;
-  //     let locationData = require('./data/location.json');
-  //     let getLocationObject = locationData[0];
-  //     let locationObject = new Location(city,getLocationObject.display_name,getLocationObject.lat,getLocationObject.lon);
-
-  //     res.send(locationObject);
-  //   } catch(error){
-  //     res.status(500).send('something went wrong ');
-  //   }
-  // }
-  // let weatherArr=[];
-  // function handelWeatherRequest(req, res) {
-  //   try{
-
-
-  //     if(weatherArr){
-  //       weatherArr=[];
-  //     }
-  //     let weatherData = require('./data/ weather.json');
-  //     let weather = weatherData.data;
-  //     weather.forEach(element =>{
-  //       new Weather(element.valid_date,element.weather.description);
-
-  //     });
-  //     res.send(weatherArr);
-  //   }
-  //   catch(error){
-  //     res.status(500).send('something went wrong ');
-
-  //   }
-  // }
-
-  // function handelParkRequest(req, response) {
-  //   try{
-  //     const url =`https://developer.nps.gov/api/v1/parks?parkCode=acad&api_key=${parkApi}`;
-  //     superAgent.get(url).then( res => {
-  //       const park=res.body.data;
-  //       park.map(element =>{
-  //         const name=element.name;
-  //         const address=element.address;
-  //         const fee=element.fee;
-  //         const description=element.description;
-  //         const url=element.url;
-  //         new Park(name,address,fee,description,url);
-
-  //       });
-  //       response.send(parkArr);
-
-  //     });
-  //     response.send(parkArr);
-  //   }
-  //   catch (error){
-  //     response.send(error);
-  //   }
-
-  // }
-
-  // constructors
-
 
   function Weather(forecast,time){
     this.forecast=forecast;
@@ -192,8 +131,6 @@ function notFoundHandler(request, response) {
   response.status(404).send('plz enter correct ^ _ ^');
 }
 
-// app.use('*', (req, res) => {
-//     res.send('all good nothing to see here!');
-// });
+
 
 app.listen(PORT, () => console.log(`Listening to Port ${PORT}`));
