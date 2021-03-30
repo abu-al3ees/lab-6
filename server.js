@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 /* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
 'use strict';
@@ -44,7 +45,7 @@ function handelParkRequest(req, response) {
       response.send(parkArr);
 
     });
-    response.send(parkArr);
+   // response.send(parkArr);
   }
   catch (error){
     response.send(error);
@@ -70,17 +71,21 @@ function handelLocationRequest(req, response) {
   try{
     let city = req.query.city;
     const url= `https://us1.locationiq.com/v1/search.php?key=${geo_api_key}&q=${city}&format=json`;
-    // let locationData = require('./data/location.json');
+
 
 
     superAgent.get(url).then(res =>{
-      let getLocationObject = res.body;
+      let getLocationObject = res.body[0];
+
       let locationObject = new Locations(city,getLocationObject.display_name,getLocationObject.lat,getLocationObject.lon);
-      response.send(locationObject);
+
+    response.send(locationObject);
     });
 
   } catch(error){
+    console.log(error);
     response.status(500).send('something went wrong ');
+
   }
 }
 
@@ -99,22 +104,18 @@ function handelWeatherRequest(req, response) {
     if(weatherArr){
       weatherArr=[];
     }
-    // let weatherData = require('./data/ weather.json');
-    // let weather = weatherData.data;
-    const url= `https://api.weatherbit.io/v2.0/current/airquality?lat=${req.query.data.latitude}&lon=${req.query.data.longitude}&key=${weatherKey}`;
+    const url= `https://api.weatherbit.io/v2.0/current/airquality?lat=${req.query.latitude}&lon=${req.query.longitude}&key=${weatherKey}`;
 
     superAgent.get(url).then(res =>{
-      let getWe = res.body;
-      getWe.map(element =>{
-        return new Weather(getWe.valid_date,getWe.weather.description);
-
+       res.body.map(element=>{
+          return new Weather(element.valid_date,element.weather.description);
       });
-
       response.send(weatherArr);
     });
-    //res.send(weatherArr);
+ // response.send(weatherArr);
   }
   catch(error){
+    console.log(error);
     response.status(500).send(error);
   }
 
