@@ -9,8 +9,11 @@ require('dotenv').config();
 // Application Dependencies
 const express = require('express');
 const cors = require('cors');
-const superAgent=require('superagent');
-const { response } = require('express');
+const superagent=require('superagent');
+const { response, request } = require('express');
+const pg=require('pg');
+const DATABASE_URL = process.env.DATABASE_URL;
+const client = new pg.Client(DATABASE_URL);
 
 // Application Setup
 const PORT = process.env.PORT;
@@ -24,14 +27,14 @@ app.use(cors());
 // routes
 app.get('/location', handelLocationRequest);
 app.get('/weather', handelWeatherRequest);
-app.get('/park', handelParkRequest);
+app.get('/parks', handelParkRequest);
 app.get('/*',notFoundHandler);
 
 
 function handelParkRequest(req, response) {
   try{
     const url =`https://developer.nps.gov/api/v1/parks?parkCode=acad&api_key=${parkApi}`;
-    superAgent.get(url).then( res => {
+    superagent.get(url).then( res => {
       const park=res.body.data;
       park.map(element =>{
         const name=element.name;
@@ -67,6 +70,7 @@ function Park(name,add,fee,des,url){
 }
 
 
+
 function handelLocationRequest(req, response) {
   try{
     let city = req.query.city;
@@ -74,7 +78,7 @@ function handelLocationRequest(req, response) {
 
 
 
-    superAgent.get(url).then(res =>{
+    superagent.get(url).then(res =>{
       let getLocationObject = res.body[0];
 
       let locationObject = new Locations(city,getLocationObject.display_name,getLocationObject.lat,getLocationObject.lon);
@@ -89,6 +93,8 @@ function handelLocationRequest(req, response) {
   }
 }
 
+
+
 function Locations(search_query, formatted_query, latitude, longitude){
   this.search_query= search_query;
   this. formatted_query= formatted_query;
@@ -96,30 +102,50 @@ function Locations(search_query, formatted_query, latitude, longitude){
   this.longitude = longitude;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 let weatherArr=[];
-function handelWeatherRequest(req, response) {
+function handelWeatherRequest(request, response) {
+  console.log('inside function weather');
 
   try{
+    console.log('insi try');
 
-    if(weatherArr){
-      weatherArr=[];
-    }
-    const url= `https://api.weatherbit.io/v2.0/current/airquality?lat=${req.query.latitude}&lon=${req.query.longitude}&key=${weatherKey}`;
 
-    superAgent.get(url).then(res =>{
-       res.body.map(element=>{
+    const url=`https://api.weatherbit.io/v2.0/forecast/daily?lat=${request.query.latitude}&lon=${request.query.longitude}&key=${weatherKey}`;
+// console.log(request.query.latitude);
+// console.log(url);
+    superagent.get(url).then(res =>{
+      // console.log('----------------res.body');
+      // console.log(res.body);
+       res.body.data.map(element=>{
+         console.log('eeeeeeee'+element);
           return new Weather(element.valid_date,element.weather.description);
       });
+
       response.send(weatherArr);
     });
- // response.send(weatherArr);
+  //   console.log('before req');
+   // console.log(weatherArr);
+  //response.send(weatherArr);
   }
   catch(error){
     console.log(error);
     response.status(500).send(error);
   }
 
-
+}
   function Weather(forecast,time){
     this.forecast=forecast;
     this.time = time;
@@ -127,11 +153,16 @@ function handelWeatherRequest(req, response) {
 
   }
 
-}
+
+
 function notFoundHandler(request, response) {
   response.status(404).send('plz enter correct ^ _ ^');
 }
 
 
-
-app.listen(PORT, () => console.log(`Listening to Port ${PORT}`));
+client.connect().then(() => {
+  app.listen(PORT, () => {
+    console.log('Connected to database:', client.connectionParameters.database); //show what database we connected to
+    console.log('Server up on', PORT);
+  });
+});
