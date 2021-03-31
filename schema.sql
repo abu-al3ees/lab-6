@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS locations;
 CREATE TABLE locations ( 
     id SERIAL PRIMARY KEY, 
     search_query VARCHAR(255), 
@@ -6,17 +7,17 @@ CREATE TABLE locations (
     longitude NUMERIC(10, 7)
   );
 
-  CREATE TABLE weathers ( 
-    id SERIAL PRIMARY KEY, 
-    forecast VARCHAR(255), 
-    time VARCHAR(255), 
+  -- CREATE TABLE weathers ( 
+  --   id SERIAL PRIMARY KEY, 
+  --   forecast VARCHAR(255), 
+  --   time VARCHAR(255), 
    
-  );
-  CREATE TABLE parks ( 
-    id SERIAL PRIMARY KEY, 
-    name VARCHAR(255), 
-    address VARCHAR(255), 
-    fee VARCHAR(255), 
-    description VARCHAR(255),
-    url VARCHAR(255)
-  );
+  -- );
+  -- CREATE TABLE parks ( 
+  --   id SERIAL PRIMARY KEY, 
+  --   name VARCHAR(255), 
+  --   address VARCHAR(255), 
+  --   fee VARCHAR(255), 
+  --   description VARCHAR(255),
+  --   url VARCHAR(255)
+  -- );

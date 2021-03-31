@@ -9,8 +9,8 @@ require('dotenv').config();
 // Application Dependencies
 const express = require('express');
 const cors = require('cors');
-const superAgent=require('superagent');
-const { response } = require('express');
+const superagent=require('superagent');
+const { response, request } = require('express');
 const pg=require('pg');
 const DATABASE_URL = process.env.DATABASE_URL;
 const client = new pg.Client(DATABASE_URL);
@@ -27,7 +27,7 @@ app.use(cors());
 // routes
 app.get('/location', handelLocationRequest);
 app.get('/weather', handelWeatherRequest);
-app.get('/park', handelParkRequest);
+app.get('/parks', handelParkRequest);
 app.get('/*',notFoundHandler);
 
 
@@ -68,16 +68,7 @@ function Park(name,add,fee,des,url){
 
 
 }
-Park.prototype.save = function() {
-  let SQL = `
-    INSERT INTO locations
-      (name,address,fee,description,url) 
-      VALUES($1,$2,$3,$4,$5) 
-      RETURNING id
-  `;
-  let values = Object.values(this);
-  return client.query(SQL,values);
-};
+
 
 
 function handelLocationRequest(req, response) {
@@ -103,60 +94,96 @@ function handelLocationRequest(req, response) {
 }
 
 
+
 function Locations(search_query, formatted_query, latitude, longitude){
   this.search_query= search_query;
   this. formatted_query= formatted_query;
   this.latitude= latitude;
   this.longitude = longitude;
 }
-Locations.prototype.save = function() {
-  let SQL = `
-    INSERT INTO locations
-      (search_query,formatted_query,latitude,longitude) 
-      VALUES($1,$2,$3,$4) 
-      RETURNING id
-  `;
-  let values = Object.values(this);
-  return client.query(SQL,values);
-};
+// Locations.prototype.save = function() {
+//   let SQL = `
+//     INSERT INTO locations
+//       (search_query,formatted_query,latitude,longitude) 
+//       VALUES($1,$2,$3,$4) 
+//       RETURNING id
+//   `;
+//   let values = Object.values(this);
+//   return client.query(SQL,values);
+// };
+
+// Locations.lookupLocation = (handler) => {
+
+//   const SQL = `SELECT * FROM locations WHERE search_query=$1`;
+//   const values = [handler.query];
+
+//   return client.query( SQL, values )
+//     .then( results => {
+//       if( results.rowCount > 0 ) {
+//         handler.cacheHit(results);
+//       }
+//       else {
+//         handler.cacheMiss();
+//       }
+//     })
+//     .catch( console.error );
+
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
 let weatherArr=[];
-function handelWeatherRequest(req, response) {
+function handelWeatherRequest(request, response) {
+  console.log('inside function weather');
 
   try{
+    console.log('insi try');
 
-    if(weatherArr){
-      weatherArr=[];
-    }
-    const url= `https://api.weatherbit.io/v2.0/current/airquality?lat=${req.query.latitude}&lon=${req.query.longitude}&key=${weatherKey}`;
-
-    superAgent.get(url).then(res =>{
-       res.body.map(element=>{
+    // if(weatherArr){
+    //   weatherArr=[];
+    // }
+    const url=`https://api.weatherbit.io/v2.0/forecast/daily?lat=${request.query.latitude}&lon=${request.query.longitude}&key=${weatherKey}`;
+console.log(request.query.latitude);
+console.log(url);
+    superagent.get(url).then(res =>{
+      console.log('----------------res.body');
+      console.log(res.body);
+       res.body.data.map(element=>{
+         console.log('eeeeeeee'+element);
           return new Weather(element.valid_date,element.weather.description);
       });
+      
       response.send(weatherArr);
     });
- // response.send(weatherArr);
+  //   console.log('before req');
+    console.log(weatherArr);
+  //response.send(weatherArr);
   }
   catch(error){
     console.log(error);
     response.status(500).send(error);
   }
 
-
+}
   function Weather(forecast,time){
     this.forecast=forecast;
     this.time = time;
     weatherArr.push(this);
 
   }
-  Weather.prototype.save = function(id) {
-    const SQL = `INSERT INTO weathers (forecast, time) VALUES ($1, $2);`;
-    const values = Object.values(this);
-    values.push(id);
-    client.query(SQL, values);
-  };
 
-}
+
+
 function notFoundHandler(request, response) {
   response.status(404).send('plz enter correct ^ _ ^');
 }
