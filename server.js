@@ -76,12 +76,24 @@ function handelLocationRequest(req, response) {
     let city = req.query.city;
     const url= `https://us1.locationiq.com/v1/search.php?key=${geo_api_key}&q=${city}&format=json`;
 
+    let safeValues = [city];
+    let sqlQuery = `SELECT * FROM locations WHERE search_query=$1`;
+    client.query(sqlQuery, safeValues);
 
-
-    superAgent.get(url).then(res =>{
+    superagent.get(url).then(res =>{
       let getLocationObject = res.body[0];
 
       let locationObject = new Locations(city,getLocationObject.display_name,getLocationObject.lat,getLocationObject.lon);
+      let safeValues = [city, getLocationObject.search_query, getLocationObject.formatted_query, getLocationObject.latitude, getLocationObject.longitude];
+      let sqlQuery = `INSERT INTO locations(city, search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4)`;
+      client.query(sqlQuery, safeValues).then(result => {
+        if (result.rows.length === 0) {
+            throw error;
+        }
+        response.status(200).json(result.rows[0]);
+      }).catch(error => {
+          response.status(500).send(error);
+      });
 
     response.send(locationObject);
     });
@@ -101,47 +113,6 @@ function Locations(search_query, formatted_query, latitude, longitude){
   this.latitude= latitude;
   this.longitude = longitude;
 }
-// Locations.prototype.save = function() {
-//   let SQL = `
-//     INSERT INTO locations
-//       (search_query,formatted_query,latitude,longitude) 
-//       VALUES($1,$2,$3,$4) 
-//       RETURNING id
-//   `;
-//   let values = Object.values(this);
-//   return client.query(SQL,values);
-// };
-
-// Locations.lookupLocation = (handler) => {
-
-//   const SQL = `SELECT * FROM locations WHERE search_query=$1`;
-//   const values = [handler.query];
-
-//   return client.query( SQL, values )
-//     .then( results => {
-//       if( results.rowCount > 0 ) {
-//         handler.cacheHit(results);
-//       }
-//       else {
-//         handler.cacheMiss();
-//       }
-//     })
-//     .catch( console.error );
-
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
 let weatherArr=[];
 function handelWeatherRequest(request, response) {
   console.log('inside function weather');
@@ -162,7 +133,7 @@ console.log(url);
          console.log('eeeeeeee'+element);
           return new Weather(element.valid_date,element.weather.description);
       });
-      
+
       response.send(weatherArr);
     });
   //   console.log('before req');
