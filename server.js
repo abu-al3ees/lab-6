@@ -13,7 +13,7 @@ const superagent=require('superagent');
 const { response, request } = require('express');
 const pg=require('pg');
 const DATABASE_URL = process.env.DATABASE_URL;
-//const client = new pg.Client(DATABASE_URL);
+const client = new pg.Client(DATABASE_URL);
 
 
 // Application Setup
@@ -25,13 +25,13 @@ const parkApi=process.env.parkApi;
 const ENV = process.env.ENV || 'DEB';
 app.use(cors());
 
-let client ='';
-if(ENV==='DIV'){
-  client = new pg.Client({connectionString: DATABASE_URL});
-}else{client = new pg.Client({
-    connectionString: DATABASE_URL,
-    ssl: {rejectUnauthorized: false}
-    });}
+// let client ='';
+// if(ENV==='DIV'){
+//   client = new pg.Client({connectionString: DATABASE_URL});
+// }else{client = new pg.Client({
+//     connectionString: DATABASE_URL,
+//     ssl: {rejectUnauthorized: false}
+//     });}
 
 
 // routes
