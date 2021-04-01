@@ -92,7 +92,7 @@ function handelLocationRequest(req, response) {
 
   client.query(selectQuery, [city]).then((dataLoction3)=>{
 
-    if(dataLoction3){
+    if(dataLoction3.rows.length===0){
       const url=`https://us1.locationiq.com/v1/search.php?key=${geo_api_key}&q=${city}&format=json`;
       superagent.get(url).then(res => {
         let dataLoction = res.body[0];
