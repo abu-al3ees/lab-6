@@ -22,7 +22,7 @@ const geo_api_key=process.env.apiKey;
 const weatherKey=process.env.weather_apiKey;
 const parkApi=process.env.parkApi;
 app.use(cors());
-//console.log(weather);
+
 
 // routes
 app.get('/location', handelLocationRequest);
@@ -128,7 +128,7 @@ function handelWeatherRequest(request, response) {
 
       response.send(weatherArr);
     });
-    console.log(weatherArr);
+
   }
   catch(error){
     console.log(error);
