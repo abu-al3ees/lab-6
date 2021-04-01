@@ -22,7 +22,7 @@ const geo_api_key=process.env.apiKey;
 const weatherKey=process.env.weather_apiKey;
 const parkApi=process.env.parkApi;
 app.use(cors());
-//console.log(weather);
+
 
 // routes
 app.get('/location', handelLocationRequest);
@@ -33,7 +33,7 @@ app.get('/*',notFoundHandler);
 
 function handelParkRequest(req, response) {
   try{
-    const url =`https://developer.nps.gov/api/v1/parks?parkCode=acad&api_key=${parkApi}`;
+    const url =`https://developer.nps.gov/api/v1/parks?city=${req.query.search_query}&api_key=${parkApi}&limit=10`;
     superagent.get(url).then( res => {
       const park=res.body.data;
       park.map(element =>{
@@ -48,7 +48,7 @@ function handelParkRequest(req, response) {
       response.send(parkArr);
 
     });
-   // response.send(parkArr);
+
   }
   catch (error){
     response.send(error);
@@ -103,42 +103,21 @@ function Locations(search_query, formatted_query, latitude, longitude){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 let weatherArr=[];
 function handelWeatherRequest(request, response) {
-  console.log('inside function weather');
 
   try{
-    console.log('insi try');
+    const url=`https://api.weatherbit.io/v2.0/forecast/daily?lat=${request.query.latitude}&lon=${request.query.longitude}&key=${weatherKey}&days=8`;
 
 
-    const url=`https://api.weatherbit.io/v2.0/forecast/daily?lat=${request.query.latitude}&lon=${request.query.longitude}&key=${weatherKey}`;
-// console.log(request.query.latitude);
-// console.log(url);
     superagent.get(url).then(res =>{
-      // console.log('----------------res.body');
-      // console.log(res.body);
        res.body.data.map(element=>{
-         console.log('eeeeeeee'+element);
+
           return new Weather(element.valid_date,element.weather.description);
       });
 
       response.send(weatherArr);
     });
-  //   console.log('before req');
-   // console.log(weatherArr);
-  //response.send(weatherArr);
   }
   catch(error){
     console.log(error);
