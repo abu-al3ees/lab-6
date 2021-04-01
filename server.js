@@ -35,6 +35,7 @@ function handelParkRequest(req, response) {
   try{
 
     const url =`https://developer.nps.gov/api/v1/parks?city=${req.query.search_query}&api_key=${parkApi}&limit=10`;
+
     superagent.get(url).then( res => {
       const park=res.body.data;
       park.map(element =>{
@@ -78,6 +79,7 @@ function handelLocationRequest(req, response) {
 
   const selectQuery ='SELECT * FROM locations WHERE search_query=$1;';
 
+
   client.query(selectQuery, [city]).then((dataLoction3)=>{
 
     if(dataLoction3){
@@ -103,19 +105,15 @@ function handelLocationRequest(req, response) {
 
 }
 
-
-
-
-
 function Locations(search_query, formatted_query, latitude, longitude){
   this.search_query= search_query;
   this. formatted_query= formatted_query;
   this.latitude= latitude;
   this.longitude = longitude;
 }
+
 let weatherArr=[];
 function handelWeatherRequest(request, response) {
-
 
   try{
 
@@ -123,11 +121,13 @@ function handelWeatherRequest(request, response) {
 
     superagent.get(url).then(res =>{
        res.body.data.map(element=>{
+
           return new Weather(element.valid_date,element.weather.description);
       });
 
       response.send(weatherArr);
     });
+
 
   }
   catch(error){
@@ -142,12 +142,14 @@ function handelWeatherRequest(request, response) {
     weatherArr.push(this);
 
   }
+
 function notFoundHandler(request, response) {
   response.status(404).send('plz enter correct ^ _ ^');
 }
 client.connect().then(() => {
   app.listen(PORT, () => {
      console.log('Connected to database:', client.connectionParameters.database); //show what database we connected to
+
     console.log('Server up on', PORT);
   });
 });
