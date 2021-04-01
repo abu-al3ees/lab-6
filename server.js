@@ -33,8 +33,9 @@ app.get('/*',notFoundHandler);
 
 function handelParkRequest(req, response) {
   try{
-    const url =`https://developer.nps.gov/api/v1/parks?parkCode=acad&api_key=${parkApi}`;
-    superAgent.get(url).then( res => {
+
+    const url =`https://developer.nps.gov/api/v1/parks?city=${req.query.search_query}&api_key=${parkApi}&limit=10`;
+    superagent.get(url).then( res => {
       const park=res.body.data;
       park.map(element =>{
         const name=element.name;
@@ -48,7 +49,7 @@ function handelParkRequest(req, response) {
       response.send(parkArr);
 
     });
-   // response.send(parkArr);
+
   }
   catch (error){
     response.send(error);
@@ -72,38 +73,37 @@ function Park(name,add,fee,des,url){
 
 
 function handelLocationRequest(req, response) {
-  try{
-    let city = req.query.city;
-    const url= `https://us1.locationiq.com/v1/search.php?key=${geo_api_key}&q=${city}&format=json`;
 
-    let safeValues = [city];
-    let sqlQuery = `SELECT * FROM locations WHERE search_query=$1`;
-    client.query(sqlQuery, safeValues);
+  let city=req.query.city;
 
-    superagent.get(url).then(res =>{
-      let getLocationObject = res.body[0];
+  const selectQuery ='SELECT * FROM locations WHERE search_query=$1;';
 
-      let locationObject = new Locations(city,getLocationObject.display_name,getLocationObject.lat,getLocationObject.lon);
-      let safeValues = [city, getLocationObject.search_query, getLocationObject.formatted_query, getLocationObject.latitude, getLocationObject.longitude];
-      let sqlQuery = `INSERT INTO locations(city, search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4)`;
-      client.query(sqlQuery, safeValues).then(result => {
-        if (result.rows.length === 0) {
-            throw error;
-        }
-        response.status(200).json(result.rows[0]);
-      }).catch(error => {
-          response.status(500).send(error);
+  client.query(selectQuery, [city]).then((dataLoction3)=>{
+
+    if(dataLoction3){
+      const url=`https://us1.locationiq.com/v1/search.php?key=${geo_api_key}&q=${city}&format=json`;
+      superagent.get(url).then(res => {
+        let dataLoction = res.body[0];
+
+
+        let theLocation = new Locations(city, dataLoction.display_name,dataLoction.lat,dataLoction.lon);
+        const insert ='INSERT INTO locations(search_query,formatted_query,latitude,longitude) VALUES ($1,$2,$3,$4);';
+        const safeValues= [theLocation.search_query,theLocation.formatted_query ,theLocation.latitude,theLocation.longitude];
+        client.query(insert,safeValues )
+        .then((dataLoction2) => {
+          response.send(theLocation);
+
+        });
       });
 
-    response.send(locationObject);
-    });
+    } else {
+      response.send(dataLoction3.rows[0]);
+    }
+  });
 
-  } catch(error){
-    console.log(error);
-    response.status(500).send('something went wrong ');
-
-  }
 }
+
+
 
 
 
@@ -115,30 +115,20 @@ function Locations(search_query, formatted_query, latitude, longitude){
 }
 let weatherArr=[];
 function handelWeatherRequest(request, response) {
-  console.log('inside function weather');
+
 
   try{
-    console.log('insi try');
 
-    // if(weatherArr){
-    //   weatherArr=[];
-    // }
-    const url=`https://api.weatherbit.io/v2.0/forecast/daily?lat=${request.query.latitude}&lon=${request.query.longitude}&key=${weatherKey}`;
-console.log(request.query.latitude);
-console.log(url);
+    const url=`https://api.weatherbit.io/v2.0/forecast/daily?lat=${request.query.latitude}&lon=${request.query.longitude}&key=${weatherKey}&days=8`;
+
     superagent.get(url).then(res =>{
-      console.log('----------------res.body');
-      console.log(res.body);
        res.body.data.map(element=>{
-         console.log('eeeeeeee'+element);
           return new Weather(element.valid_date,element.weather.description);
       });
 
       response.send(weatherArr);
     });
-  //   console.log('before req');
     console.log(weatherArr);
-  //response.send(weatherArr);
   }
   catch(error){
     console.log(error);
@@ -152,17 +142,12 @@ console.log(url);
     weatherArr.push(this);
 
   }
-
-
-
 function notFoundHandler(request, response) {
   response.status(404).send('plz enter correct ^ _ ^');
 }
-
-
 client.connect().then(() => {
   app.listen(PORT, () => {
-    console.log('Connected to database:', client.connectionParameters.database); //show what database we connected to
+     console.log('Connected to database:', client.connectionParameters.database); //show what database we connected to
     console.log('Server up on', PORT);
   });
 });
