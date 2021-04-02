@@ -15,34 +15,94 @@ const pg=require('pg');
 const DATABASE_URL = process.env.DATABASE_URL;
 const client = new pg.Client(DATABASE_URL);
 
+
 // Application Setup
 const PORT = process.env.PORT;
 const app = express();
 const geo_api_key=process.env.apiKey;
 const weatherKey=process.env.weather_apiKey;
 const parkApi=process.env.parkApi;
+const movieApi=process.env.movies_api;
+const yelpApi=process.env.yel_api;
+const ENV = process.env.ENV || 'DEB';
 app.use(cors());
+
+// let client ='';
+// if(ENV==='DIV'){
+//   client = new pg.Client({connectionString: DATABASE_URL});
+// }else{client = new pg.Client({
+//     connectionString: DATABASE_URL,
+//     ssl: {rejectUnauthorized: false}
+//     });}
 
 
 // routes
 app.get('/location', handelLocationRequest);
 app.get('/weather', handelWeatherRequest);
 app.get('/parks', handelParkRequest);
+app.get('/movies',getMovie);
 app.get('/*',notFoundHandler);
+
+function getMovie(req,response){
+  try{
+
+    const url =`https://api.themoviedb.org/3/search/movie?api_key=${movieApi}&query=${req.query.search_query}`;
+
+    superagent.get(url).then( res => {
+      const move=res.body.results;
+      move.map(element =>{
+        const title=element.title;
+        const overview=element.overview;
+        const average_votes=element.average_votes;
+        const total_votes=element.total_votes;
+        const image_url=element.image_url;
+        const popularity=element.popularity;
+        const released_on=element.released_on;
+        return new Movies(title,overview,average_votes,total_votes,image_url,popularity,released_on);
+
+      });
+      response.send(movieArr);
+
+    });
+
+  }
+  catch (error){
+    response.send(error);
+  }
+
+
+}
+let movieArr=[];
+
+function Movies(title,overview,average_votes,total_votes,image_url,popularity,released_on){
+  this.title=title;
+  this.overview=overview;
+  this.average_votes=average_votes;
+  this.total_votes=total_votes;
+  this.image_url=image_url;
+  this.popularity=popularity;
+  this.released_on=released_on;
+  movieArr.push(this);
+
+
+
+}
 
 
 function handelParkRequest(req, response) {
   try{
+
     const url =`https://developer.nps.gov/api/v1/parks?city=${req.query.search_query}&api_key=${parkApi}&limit=10`;
+
     superagent.get(url).then( res => {
       const park=res.body.data;
       park.map(element =>{
         const name=element.name;
-        const address=element.address;
-        const fee=element.fee;
+        const addresses=element.addresses;
+        const fees=element.fees;
         const description=element.description;
         const url=element.url;
-        return new Park(name,address,fee,description,url);
+        return new Park(name,addresses,fees,description,url);
 
       });
       response.send(parkArr);
@@ -72,28 +132,36 @@ function Park(name,add,fee,des,url){
 
 
 function handelLocationRequest(req, response) {
-  try{
-    let city = req.query.city;
-    const url= `https://us1.locationiq.com/v1/search.php?key=${geo_api_key}&q=${city}&format=json`;
+
+  let city=req.query.city;
+
+  const selectQuery ='SELECT * FROM locations WHERE search_query=$1;';
 
 
+  client.query(selectQuery, [city]).then((dataLoction3)=>{
 
-    superagent.get(url).then(res =>{
-      let getLocationObject = res.body[0];
+    if(dataLoction3.rows.length===0){
+      const url=`https://us1.locationiq.com/v1/search.php?key=${geo_api_key}&q=${city}&format=json`;
+      superagent.get(url).then(res => {
+        let dataLoction = res.body[0];
 
-      let locationObject = new Locations(city,getLocationObject.display_name,getLocationObject.lat,getLocationObject.lon);
 
-    response.send(locationObject);
-    });
+        let theLocation = new Locations(city, dataLoction.display_name,dataLoction.lat,dataLoction.lon);
+        const insert ='INSERT INTO locations(search_query,formatted_query,latitude,longitude) VALUES ($1,$2,$3,$4);';
+        const safeValues= [theLocation.search_query,theLocation.formatted_query ,theLocation.latitude,theLocation.longitude];
+        client.query(insert,safeValues )
+        .then((dataLoction2) => {
+          response.send(theLocation);
 
-  } catch(error){
-    console.log(error);
-    response.status(500).send('something went wrong ');
+        });
+      });
 
-  }
+    } else {
+      response.send(dataLoction3.rows[0]);
+    }
+  });
+
 }
-
-
 
 function Locations(search_query, formatted_query, latitude, longitude){
   this.search_query= search_query;
@@ -102,13 +170,12 @@ function Locations(search_query, formatted_query, latitude, longitude){
   this.longitude = longitude;
 }
 
-
 let weatherArr=[];
 function handelWeatherRequest(request, response) {
 
   try{
-    const url=`https://api.weatherbit.io/v2.0/forecast/daily?lat=${request.query.latitude}&lon=${request.query.longitude}&key=${weatherKey}&days=8`;
 
+    const url=`https://api.weatherbit.io/v2.0/forecast/daily?lat=${request.query.latitude}&lon=${request.query.longitude}&key=${weatherKey}&days=8`;
 
     superagent.get(url).then(res =>{
        res.body.data.map(element=>{
@@ -118,6 +185,8 @@ function handelWeatherRequest(request, response) {
 
       response.send(weatherArr);
     });
+
+
   }
   catch(error){
     console.log(error);
@@ -132,16 +201,13 @@ function handelWeatherRequest(request, response) {
 
   }
 
-
-
 function notFoundHandler(request, response) {
   response.status(404).send('plz enter correct ^ _ ^');
 }
-
-
 client.connect().then(() => {
   app.listen(PORT, () => {
-    console.log('Connected to database:', client.connectionParameters.database); //show what database we connected to
+     console.log('Connected to database:', client.connectionParameters.database); //show what database we connected to
+
     console.log('Server up on', PORT);
   });
 });
