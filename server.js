@@ -22,6 +22,8 @@ const app = express();
 const geo_api_key=process.env.apiKey;
 const weatherKey=process.env.weather_apiKey;
 const parkApi=process.env.parkApi;
+const movieApi=process.env.movies_api;
+const yelpApi=process.env.yel_api;
 const ENV = process.env.ENV || 'DEB';
 app.use(cors());
 
@@ -38,7 +40,50 @@ app.use(cors());
 app.get('/location', handelLocationRequest);
 app.get('/weather', handelWeatherRequest);
 app.get('/parks', handelParkRequest);
+app.get('/movies',getMovie);
 app.get('/*',notFoundHandler);
+
+function getMovie(req,response){
+  try{
+
+    const url =`https://api.themoviedb.org/3/search/movie?api_key=${movieApi}&query=${req.query.search_query}`;
+
+    superagent.get(url).then( res => {
+      const move=res.body.results;
+      move.map(element =>{
+        const title=element.title;
+        const overview=element.overview;
+        const average_votes=element.average_votes;
+        const total_votes=element.total_votes;
+        const image_url=element.image_url;
+        const popularity=element.popularity;
+        const released_on=element.released_on;
+        return new Movies(title,overview,average_votes,total_votes,image_url,popularity,released_on);
+
+      });
+      response.send(movieArr);
+
+    });
+
+  }
+  catch (error){
+    response.send(error);
+  }
+
+
+}
+let movieArr=[];
+
+function Movies(title,overview,average_votes,total_votes,image_url,popularity,released_on){
+  this.title=title;
+  this.overview=overview;
+  this.average_votes=average_votes;
+  this.total_votes=total_votes;
+  this.image_url=image_url;
+  this.popularity=popularity;
+  this.released_on=released_on;
+  movieArr.push(this);
+}
 
 
 function handelParkRequest(req, response) {
@@ -50,14 +95,16 @@ function handelParkRequest(req, response) {
       const park=res.body.data;
       park.map(element =>{
         const name=element.name;
-        const address=element.address;
-        const fee=element.fee;
+        const addresses=element.addresses;
+        const fees=element.fees;
         const description=element.description;
         const url=element.url;
-        return new Park(name,address,fee,description,url);
+        return new Park(name,addresses,fees,description,url);
 
       });
+      console.log(parkArr);
       response.send(parkArr);
+     
 
     });
 
