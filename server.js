@@ -22,6 +22,8 @@ const app = express();
 const geo_api_key=process.env.apiKey;
 const weatherKey=process.env.weather_apiKey;
 const parkApi=process.env.parkApi;
+const movieApi=process.env.movies_api;
+const yelpApi=process.env.yel_api;
 const ENV = process.env.ENV || 'DEB';
 app.use(cors());
 
@@ -38,8 +40,92 @@ app.use(cors());
 app.get('/location', handelLocationRequest);
 app.get('/weather', handelWeatherRequest);
 app.get('/parks', handelParkRequest);
+app.get('/movies',getMovie);
+app.get('/yelp',getYelp);
 app.get('/*',notFoundHandler);
 
+function getMovie(req,response){
+  try{
+
+    const url = `https://api.themoviedb.org/3/search/movie?api_key=${movieApi}&query=${req.query.search_query}`;
+
+    superagent.get(url).then( res => {
+      const move=res.body.results;
+      move.map(element =>{
+        const title=element.title;
+        const overview=element.overview;
+        const vote_average=element.vote_average;
+        const vote_count=element.vote_count;
+        const image_url='https://image.tmdb.org/t/p/w500'+ element.poster_path;
+        const popularity=element.popularity;
+        const release_date=element.release_date;
+        return new Movies(title,overview,vote_average,vote_count,image_url,popularity,release_date);
+
+      });
+      console.log(movieArr);
+      response.send(movieArr);
+
+    });
+
+  }
+  catch (error){
+    response.send(error);
+  }
+
+
+}
+let movieArr=[];
+
+function Movies(title,overview,average_votes,total_votes,image_url,popularity,released_on){
+  this.title=title;
+  this.overview=overview;
+  this.average_votes=average_votes;
+  this.total_votes=total_votes;
+  this.image_url=image_url;
+  this.popularity=popularity;
+  this.released_on=released_on;
+  movieArr.push(this);
+}
+
+let count = 0;
+function getYelp(request, response){
+  //yelpArr=[];
+  //let city = request.query.city;
+    const url =`https://api.yelp.com/v3/businesses/search?location=${request.query.search_query}&limit=10`;
+    superagent.get(url).set('Authorization',`Bearer ${yelpApi}`).then(res => {
+        const yelpData = res.body.businesses;
+          yelpData.map(element => {
+              const name= element.name;
+              const img = element.image_url;
+              const price= element.price;
+              const rating = element.rating;
+              const url= element.url;
+              return new Yelp(name,img,price,rating,url);
+            });
+
+          let count2 =count+5;
+         let countArr = yelpArr.slice(count,count2);
+         count +=5 ;
+
+            response.send(countArr);
+          }).catch((error) => {
+            response.status(500).send('something wrong');
+          });
+
+        }
+
+
+
+
+let yelpArr = [];
+function Yelp(name,image_url,price,rating,url){
+    this.name = name;
+    this.image_url = image_url;
+    this.price = price;
+    this.rating =rating;
+    this.url =url;
+    yelpArr.push(this);
+}
 
 function handelParkRequest(req, response) {
   try{
@@ -50,14 +136,16 @@ function handelParkRequest(req, response) {
       const park=res.body.data;
       park.map(element =>{
         const name=element.name;
-        const address=element.address;
-        const fee=element.fee;
+        const addresses=element.addresses;
+        const fees=element.fees;
         const description=element.description;
         const url=element.url;
-        return new Park(name,address,fee,description,url);
+        return new Park(name,addresses,fees,description,url);
 
       });
+
       response.send(parkArr);
+
 
     });
 
